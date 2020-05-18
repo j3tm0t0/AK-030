@@ -66,9 +66,20 @@ setup(){
 
 ```
 void loop(){
+  // LTE網に接続する
+  if (!ak030->connected()) { // 既に接続しているか確認
+    Serial.println("connecting to LTE network...");
+    ak030->connect();  // 接続する
+    if (!ak030->ok()) {
+      Serial.println("cannot connect LTE network");
+      return;
+    }
+    Serial.println("...connected");
+  }
+
   // example.comのIPアドレスを取得
   const char *ipaddr = ak030->dnsLookup("example.com");
-  if (ak030->ng()) {
+  if (ak030->ng()) { // ここは !ak030->on() としてもよい
     Serial.println("dns lookup failed");
     return;
   }
