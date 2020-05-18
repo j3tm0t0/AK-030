@@ -20,7 +20,7 @@
 | IO22  | I2C SCL                |
 | IO21  | I2C SDA                |
 | SD0   | ESP32 UART2※ RTS       |
-| SD1   | SP32 UART2※ CTS        |
+| SD1   | ESP32 UART2※ CTS       |
 | IO16  | ESP32 UART2※ RX        |
 | IO17  | ESP32 UART2※ TX        |
 
@@ -42,3 +42,73 @@
 1. GitHub リポジトリ( https://github.com/ABIT-crop/AK-030 )をブラウザで開き、「Clone or Download」ボタンをクリック。さらに「Donwload ZIP」をクリックして、AK-030-master.zip をローカル PC にダウンロードする。
 1. Arduino IDE の"Sketch"-"Include Library"から"Add .ZIP Library"を選択して、ダウンロードした AK-030-master.zip を指定。
 1. 以後、"File"-"Examples"-"AK-030"からサンプルプログラムを開けるようになる。
+
+# Arduino ライブラリ( AK-030.h )の使い方
+
+## ライブラリの初期化
+
+```
+#include "AK-030.h"
+
+AK030 *ak030 = new AK030(); // AK030オブジェクトの生成
+
+setup(){
+    Serial.begin(115200); // デバッグ表示用
+
+    ak030->begin("soracom.io");    // 利用するキャリア(SIMカード)のAPNを指定
+}
+
+```
+
+## TCP 通信の方法（例)
+
+以下の例ではわかりやすさを優先し、エラー処理などを一部省略しています。より詳細なサンプルは、examples/LTE/http_get を参照ください。
+
+```
+void loop(){
+  // example.comのIPアドレスを取得
+  const char *ipaddr = ak030->dnsLookup("example.com");
+  if (ak030->ng()) {
+    Serial.println("dns lookup failed");
+    return;
+  }
+  Serial.printf("=> %s\n", ipaddr);
+
+  // TCPソケットを開く
+  Serial.printf("open tcp: ipaddr=%s, port=%d\n", ipaddr, 80);
+  ak030->openTcp(ipaddr, 80);
+  if (ak030->ng()) {
+    Serial.printf("cannot open tcp\n");
+    return;
+  } else {
+    Serial.println("...opened");
+  }
+
+  // HTTPリクエストを送信する
+  const char req[] =
+      "GET / HTTP/1.1\r\n"
+      "Host: example.com\r\n"
+      "\r\n";
+  ak030->send(req,strlen(req)); // TCP送信
+
+  // HTTPレスポンスを受信する
+  const char data[3000];
+  ak030->waitEvent(30);  // 最大で30秒間、受信イベントが来るの待つ
+  if (ak030->eventDataReceived()) {
+    int n;
+    ak030->receive(data, sizeof(data), &n); // TCP受信
+    Serial.printf("received %d bytes\n", n);
+    Serial.println("===== recieved data begin =====");
+    Serial.println(data);
+    Serial.println("===== recieved data end =======");
+  }
+  ak030->close(); // TCPソケットを閉じる
+
+  delay(1000*30); // 30秒間ウェイトする
+}
+
+```
+
+# AK-030 ライブラリの制約
+
+- 現在のバージョンでは、複数の TCP と UDP ソケットを同時に使うことはできません。
