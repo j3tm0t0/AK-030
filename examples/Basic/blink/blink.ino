@@ -2,17 +2,17 @@
 #include "Arduino.h"
 
 void setup() {
-  pinMode(PORT_LED_1, OUTPUT);  // Left Side Blue LED
-  pinMode(PORT_LED_2, OUTPUT);  // Right Side Orange LED
+  pinMode(PIN_LED_POWER, OUTPUT);  // Left Side Blue LED
+  pinMode(PIN_LED_RADIO, OUTPUT);  // Right Side Orange LED
 
-  digitalWrite(PORT_LED_1, HIGH);  // turn off LED (negative logic)
-  digitalWrite(PORT_LED_2, HIGH);  // turn off LED (negative logic)
+  digitalWrite(PIN_LED_POWER, HIGH);  // turn off LED (negative logic)
+  digitalWrite(PIN_LED_RADIO, HIGH);  // turn off LED (negative logic)
 }
 void loop() {
-  digitalWrite(PORT_LED_1, HIGH);  // off
-  digitalWrite(PORT_LED_2, LOW);   // on
+  digitalWrite(PIN_LED_POWER, HIGH);  // off
+  digitalWrite(PIN_LED_RADIO, LOW);   // on
   delay(500);
-  digitalWrite(PORT_LED_1, LOW);   // on
-  digitalWrite(PORT_LED_2, HIGH);  // off
+  digitalWrite(PIN_LED_POWER, LOW);   // on
+  digitalWrite(PIN_LED_RADIO, HIGH);  // off
   delay(500);
 }

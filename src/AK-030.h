@@ -1,10 +1,10 @@
 #ifndef ABIT_LTE_H
 #define ABIT_LTE_H
 
-#include <Arduino.h>
+#include "Arduino.h"
 
-#define PORT_LED_1 27  // Left Side LED(BLUE)
-#define PORT_LED_2 32  // Right Side LED(ORANGE)
+#define PIN_LED_POWER 27  // Left Side LED(BLUE)
+#define PIN_LED_RADIO 32  // Right Side LED(ORANGE)
 
 #define AK030_AT_CMD_RESULT_NONE 0
 #define AK030_AT_CMD_OK          1
