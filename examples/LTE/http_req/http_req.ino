@@ -2,13 +2,16 @@
 #include "Arduino.h"
 
 #define SERVER "example.com"
+#define port   80
+
+static char http_response[5000];
 
 AK030 *ak030 = new AK030();
 
 void http_get_example() {
   Serial.println();
   Serial.println("@@@@@@@@@@@@@@@@@@@@@@");
-  Serial.println("http_get example start");
+  Serial.println("http get example start");
   Serial.println("@@@@@@@@@@@@@@@@@@@@@@");
 
   if (!ak030->connected()) {
@@ -29,38 +32,36 @@ void http_get_example() {
   }
   Serial.printf("=> ipaddress=%s\n", ipaddr);
 
-  int port = 80;
-  Serial.printf("open tcp: ipaddr=%s port=%d\n", ipaddr, port);
-  ak030->openTcp(ipaddr, port);
+  Serial.printf("open tcp: ipaddr=%s port=%d\n", ipaddr, PORT);
+  ak030->openTcp(ipaddr, PORT);
   if (!ak030->ok()) {
     Serial.println("cannot open tcp");
     return;
   }
   Serial.println("...opened");
 
-  // get http://example.com/
+  // get http://example.com:80/
   const char req_template[] =
-      "GET / HTTP/1.1\r\n"
-      "Host: %s\r\n"
+      "GET http://%s:%d/ HTTP/1.1\r\n"
+      "Host: %s:%d\r\n"
       "\r\n";
 
   char req[128];
-  snprintf(req, sizeof(req), req_template, SERVER);
+  snprintf(req, sizeof(req), req_template, SERVER, PORT, SERVER, PORT);
 
-  Serial.printf("http get start: http://%s/\n", SERVER);
+  Serial.printf("http get start: http://%s:%d/\n", SERVER, PORT);
   ak030->send(req);
   if (!ak030->ok()) {
     Serial.println("send() failed");
     return;
   }
 
-  static char data[3000];
   int total_size = 0;
-  int left_size = sizeof(data);
+  int left_size = sizeof(http_response);
   ak030->waitEvent(30);  // wait for socket event in 30 seconds(at most)
   while (ak030->eventDataReceived()) {
     int n;
-    ak030->receive(data + total_size, left_size, &n);
+    ak030->receive(http_response + total_size, left_size, &n);
     total_size += n;
     left_size -= n;
     if (left_size <= 0) {
@@ -70,14 +71,14 @@ void http_get_example() {
     ak030->waitEvent();
   }
   if (ak030->ng()) {
-    Serial.println("tcpReceive() failed");
+    Serial.println("receive() failed");
     ak030->close();
     return;
   }
 
   Serial.printf("received %d bytes\n", total_size);
   Serial.println("===== recieved data begin =====");
-  Serial.println(data);
+  Serial.println(http_response);
   Serial.println("===== recieved data end =======");
 
   Serial.println("close tcp");
@@ -101,5 +102,5 @@ void setup() {
 
 void loop() {
   http_get_example();
-  delay(1000 * 120);
+  delay(1000 * 60 * 2);
 }
