@@ -176,6 +176,8 @@ void AK030::connect() {
   }
   memset(m_ip_address, 0, sizeof(m_ip_address));
 
+  Serial2.flush();
+
   send_at_cmd("AT+CFUN=0");
   wait_at_cmd_result();
   if (is_at_cmd_ng()) {
@@ -856,4 +858,23 @@ void AK030::close() {
     m_cmd_ok = true;
   }
   m_socket_opened = false;
+}
+
+int AK030::getRSSI() {
+  snprintf(cmd_buffer, sizeof(cmd_buffer), "AT%%MEAS=\"8\"\r\n");
+  send_at_cmd();
+  wait_at_cmd_result(10, true);
+  if (is_at_cmd_ng()) {
+    if (debug) Serial.println("* getRSSI(): ERROR 1");
+    m_cmd_ok = false;
+    return -999;
+  }
+  char *p = strstr(cmd_buffer, "RSSI = ");
+  if (!p) {
+    if (debug) Serial.println("* getRSSI(): ERROR 2");
+    m_cmd_ok = false;
+    return -999;
+  }
+  m_cmd_ok = true;
+  return atoi(p + sizeof("RSSI = ") - 1);
 }
