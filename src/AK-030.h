@@ -28,7 +28,7 @@ private:
   bool m_cmd_ok;
 
   void send_at_cmd(const char *cmd = NULL);
-  void wait_at_cmd_result(int tmout = 10);
+  void wait_at_cmd_result(int tmout = 10, bool flush = false);
 
   int at_cmd_result() { return m_at_cmd_result; };
   bool is_at_cmd_error() { return m_at_cmd_result == AK030_AT_CMD_ERROR; };
@@ -64,6 +64,11 @@ public:
   // resolve ip address for hostname
   // return NULL if failed
   const char *dnsLookup(const char *hostname);
+
+  // install credential file
+  void installCertificate(const char *fname, int num, const char *str);
+  // open SSL socket
+  void openSSL(const char *ipaddr, int port, int num);
 
   // open udp socket
   void openUdp(const char *ipaddr, int port);

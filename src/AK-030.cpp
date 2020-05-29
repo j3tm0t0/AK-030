@@ -32,8 +32,13 @@ void AK030::send_at_cmd(const char *cmd) {
  *
  * @param tmout : timeout seconds
  */
-void AK030::wait_at_cmd_result(int tmout) {
+void AK030::wait_at_cmd_result(int tmout, bool flash) {
   int cnt = 0;
+
+  if (flash) {
+    Serial2.flush();
+  }
+
   memset(cmd_buffer, 0, sizeof(cmd_buffer));
   unsigned long tm = millis();
 
@@ -139,14 +144,14 @@ void AK030::begin(const char *apn) {
   send_at_cmd("AT+CFUN=0");
   wait_at_cmd_result();
   if (is_at_cmd_ng()) {
-    Serial.println("NYYYYYYYYYYYYYYYY");
+    Serial.println("AT+CFUN failed");
     m_cmd_ok = false;
     return;
   }
   send_at_cmd("AT%CMATT=0");
   wait_at_cmd_result();
   if (is_at_cmd_ng()) {
-    Serial.println("NYYYYYYYYYYYYYYYYAAAAAAAAAAAAAAA");
+    Serial.println("AT%CMATT=0 failed");
     m_cmd_ok = false;
     return;
   }
@@ -202,6 +207,8 @@ void AK030::connect() {
     m_cmd_ok = false;
     return;
   }
+
+  Serial2.flush();
 
   ////////////////////
   // Get IP Address
@@ -360,6 +367,101 @@ const char *AK030::dnsLookup(const char *hostname) {
   }
   m_cmd_ok = true;
   return m_dns_lookup;
+}
+
+// install credential file
+void AK030::installCertificate(const char *fname, int num, const char *str) {
+  if (debug) {
+    Serial.println();
+    Serial.println("******************");
+    Serial.println("* AK030::installCertificate()");
+    Serial.printf("* fname=%s, num=%d\n", fname, num);
+    Serial.println();
+  }
+  // snprintf(cmd_buffer, sizeof(cmd_buffer), "AT%%CERTCMD=\"WRITE\",\"%s\",0,\r\n\"%s\"", fname, str);
+  snprintf(cmd_buffer, sizeof(cmd_buffer), "AT%%CERTCMD=\"WRITE\",\"%s\",0,\"%s\"", fname, str);
+  send_at_cmd();
+  wait_at_cmd_result(60);
+  if (is_at_cmd_ng()) {
+    if (debug) Serial.println("* installCertificate() ERROR: 1");
+    m_cmd_ok = false;
+    return;
+  }
+  snprintf(cmd_buffer, sizeof(cmd_buffer), "AT%%CERTCFG=\"ADD\",%d,\"%s\"", num, fname);
+  send_at_cmd();
+  wait_at_cmd_result(60);
+  if (is_at_cmd_ng()) {
+    if (debug) Serial.println("* installCertificate() ERROR: 2");
+    m_cmd_ok = false;
+    return;
+  }
+  m_cmd_ok = true;
+}
+// open SSL socket
+void AK030::openSSL(const char *ipaddr, int port, int num) {
+  if (debug) {
+    Serial.println();
+    Serial.println("******************");
+    Serial.println("* AK030::openSSL()");
+    Serial.printf("* ipaddr=%s, port=%d, \n", ipaddr, port);
+    Serial.println();
+  }
+  if (m_socket_opened) {
+    if (debug) {
+      Serial.println("* cannot open multiple sockets");
+    }
+    m_cmd_ok = false;
+    return;
+  }
+
+  m_socket_opened = false;
+  // AT%SOCKETCMD="ALLOCATE",0,"TCP","OPEN","%s",%d
+  snprintf(cmd_buffer, sizeof(cmd_buffer), "AT%%SOCKETCMD=\"ALLOCATE\",0,\"TCP\",\"OPEN\",\"%s\",%d", ipaddr, port);
+  send_at_cmd();
+  wait_at_cmd_result(60);
+  if (is_at_cmd_ng()) {
+    if (debug) Serial.println("* openSSL() ERROR: 1");
+    m_cmd_ok = false;
+    return;
+  }
+  // %SOCKETCMD:1
+  // OK
+  char *p = strstr(cmd_buffer, "%SOCKETCMD:");
+  if (!p) {
+    if (debug) Serial.println("* openSSL() ERROR: 2");
+    m_cmd_ok = false;
+    return;
+  }
+  p = strchr(cmd_buffer, ':');
+  m_socket_id = atoi(++p);
+  if (debug) {
+    Serial.printf("* openSSL() ALLOCATE OK: socket_id=%d\r\n", m_socket_id);
+  }
+
+  snprintf(cmd_buffer, sizeof(cmd_buffer), "AT%%SOCKETCMD=\"SSLALLOC\",%d,0,%d", m_socket_id, num);
+  send_at_cmd();
+  wait_at_cmd_result(60);
+  if (is_at_cmd_ng()) {
+    if (debug) Serial.println("* openSSL() ERROR: 3");
+    cleanup(m_socket_id);
+    m_cmd_ok = false;
+    return;
+  }
+  if (debug) Serial.println("* openSSL() SSLALLOC OK");
+
+  snprintf(cmd_buffer, sizeof(cmd_buffer), "AT%%SOCKETCMD=\"ACTIVATE\",%d", m_socket_id);
+  send_at_cmd();
+  wait_at_cmd_result(60);
+  if (is_at_cmd_ng()) {
+    if (debug) Serial.println("* openSSL() ERROR: 4");
+    cleanup(m_socket_id);
+    m_cmd_ok = false;
+    return;
+  }
+  if (debug) Serial.println("* openTcp() ACTIVATE OK");
+  m_socket_opened = true;
+  m_cmd_ok = true;
+  return;
 }
 
 /**
