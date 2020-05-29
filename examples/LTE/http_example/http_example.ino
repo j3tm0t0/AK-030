@@ -42,14 +42,15 @@ void http_get_example() {
 
   // get http://example.com:80/
   const char req_template[] =
-      "GET http://%s:%d/ HTTP/1.1\r\n"
+      "GET /200 HTTP/1.1\r\n"
       "Host: %s:%d\r\n"
+      "Accept: application/json\r\n"
       "\r\n";
 
   char req[128];
   snprintf(req, sizeof(req), req_template, SERVER, PORT, SERVER, PORT);
 
-  Serial.printf("http get start: http://%s:%d/\n", SERVER, PORT);
+  Serial.printf("http get start: http://%s:%d/200\n", SERVER, PORT);
   ak030->send(req);
   if (!ak030->ok()) {
     Serial.println("send() failed");
@@ -102,5 +103,5 @@ void setup() {
 
 void loop() {
   http_get_example();
-  delay(1000 * 60 * 2);
+  delay(1000 * 60 * 3);
 }
