@@ -58,6 +58,8 @@ public:
   void disconnect();            // disconnect from LTE network
   void cleanup(int n);
 
+  int getRSSI();
+
   // get local ip address
   const char *ipAddress() { return m_ip_address; }
 
