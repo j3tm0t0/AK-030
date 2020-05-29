@@ -81,7 +81,7 @@ void loop(){
 
   // example.comのIPアドレスを取得
   const char *ipaddr = ak030->dnsLookup("example.com");
-  if (ak030->ng()) { // ここは !ak030->on() としてもよい
+  if (ak030->ng()) { // ここは !ak030->ok() としてもよい
     Serial.println("dns lookup failed");
     return;
   }
@@ -124,4 +124,4 @@ void loop(){
 
 # AK-030 ライブラリの制約
 
-- 現在のバージョンでは、複数の TCP と UDP ソケットを同時に使うことはできません。
+- 現在のバージョンでは、複数の TCP および UDP ソケットを同時に使うことはできません。
