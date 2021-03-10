@@ -2,7 +2,7 @@
 #include "Arduino.h"
 
 #define SERVER "example.com"
-#define port   80
+#define PORT   80
 
 static char http_response[5000];
 
